@@ -1,0 +1,36 @@
+{
+    "frontend_2ghz": {
+        "NormalTemp_RF": {
+            "lower_yellow": 0.0,
+            "lower_red": 0.0,
+            "upper_yellow": 20.0,
+            "upper_red": 24.0
+        },
+        "NormalTemp_Load": {
+            "yellow": 300.0,
+            "red": 350.0
+        },
+        "Cryo_ColdPlate": {
+            "yellow": 100.0,
+            "red": 100.0
+        },
+        "NormalTemp_Noise": {
+            "yellow": 22.0,
+            "red": 23.0
+        }
+    },
+    "frontend_8ghz": {
+        "NormalTemp_RF": {
+            "yellow": 21.0,
+            "red": 26.0
+        }
+    },
+    "frontend_22ghz": {
+        "NormalTemp_RF": {
+            "lower_yellow": 28.0,
+            "lower_red": 26.0,
+            "upper_yellow": 30.0,
+            "upper_red": 32.0
+        }
+    }
+}

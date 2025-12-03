@@ -1,0 +1,236 @@
+from typing import TYPE_CHECKING
+from PyQt6.QtWidgets import (
+    QFrame, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QWidget,
+    QDialog, QListWidget, QGraphicsOpacityEffect
+)
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
+
+# MonitoringWindow 타입 힌트
+if TYPE_CHECKING:
+    from MoniteringMain import MonitoringWindow
+
+from Monitering_Ui.threshold_dialog import ThresholdDialog
+
+
+# ======================================================
+# MiniCard (경고/주의 개별 카드)
+# ======================================================
+class MiniCard(QFrame):
+    def __init__(self, name, color, parent=None):
+        super().__init__(parent)
+
+        # 전체 박스만 외곽선 있음
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: #0F172A;
+                border-radius: 10px;
+                border: 2px solid {color};
+            }}
+            QLabel {{
+                background: transparent;
+                color:white;
+                font-size:16pt;
+                font-weight:bold;
+                border: none;   /* ★ 개별 라벨 외곽선 제거 */
+            }}
+        """)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(10)
+
+        self.label_name = QLabel(name)
+        self.label_value = QLabel("0건")
+
+        layout.addWidget(self.label_name)
+        layout.addWidget(self.label_value)
+
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # 깜빡임 효과 그대로 유지
+        self.effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.effect)
+
+        self.anim = QPropertyAnimation(self.effect, b"opacity")
+        self.anim.setDuration(600)
+        self.anim.setStartValue(0.3)
+        self.anim.setEndValue(1.0)
+        self.anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self.anim.setLoopCount(-1)
+
+    def set_count(self, c):
+        self.label_value.setText(f"{c}건")
+
+        if c >= 1:
+            self.anim.start()
+        else:
+            self.anim.stop()
+            self.effect.setOpacity(1.0)
+
+
+# ======================================================
+# GroupCard (상한/하한 박스)
+# ======================================================
+class GroupCard(QFrame):
+    def __init__(self, title: str, parent=None):
+        super().__init__(parent)
+
+        self.setStyleSheet("""
+            QFrame {
+                background-color:transparent;
+                border-radius:14px;
+                border:2px solid #2563EB;
+            }
+            QLabel {
+                border:none;
+                color:white;
+                font-size:15pt;
+                font-weight:bold;
+            }
+        """)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(15, 12, 15, 12)
+        layout.setSpacing(20)
+
+        # 제목
+        self.title_label = QLabel(title)
+        layout.addWidget(self.title_label)
+
+        # 경고/주의 카드
+        self.card_red = MiniCard("경고", "#f87171")
+        self.card_yellow = MiniCard("주의", "#facc15")
+
+        layout.addWidget(self.card_red)
+        layout.addWidget(self.card_yellow)
+
+        layout.addStretch()
+
+    def update(self, red_count: int, yellow_count: int):
+        self.card_red.set_count(red_count)
+        self.card_yellow.set_count(yellow_count)
+
+
+# ======================================================
+# FrameSummary (전체 Summary UI)
+# ======================================================
+class FrameSummary(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setStyleSheet("background-color:#0F172A; border-radius:10px;")
+
+        # 리스트 데이터
+        self.upper_warnings = []
+        self.upper_errors = []
+        self.lower_warnings = []
+        self.lower_errors = []
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(20, 25, 20, 20)
+        layout.setSpacing(25)
+
+        # --------------------- 상한/하한 박스 ---------------------
+        self.card_upper = GroupCard("임계값 상한 (UPPER)", self)
+        self.card_lower = GroupCard("임계값 하한 (LOWER)", self)
+
+        layout.addWidget(self.card_upper)
+        layout.addWidget(self.card_lower)
+        layout.addStretch()
+
+        # --------------------- 음소거 버튼 ---------------------
+        self.btn_mute = QPushButton("🔊")
+        self.btn_mute.setStyleSheet("""
+            QPushButton {
+                background-color:#1E293B;
+                color:white;
+                border-radius:10px;
+                font-size:20pt;
+            }
+        """)
+        self.btn_mute.clicked.connect(self.toggle_mute)
+        layout.addWidget(self.btn_mute)
+
+        # --------------------- 임계값 설정 버튼 ---------------------
+        self.btn_setting = QPushButton("임계값 설정")
+        self.btn_setting.setStyleSheet("""
+            QPushButton {
+                background-color:#2563EB;
+                color:white;
+                padding:15px 25px;
+                border-radius:10px;
+                font-size:14pt;
+                font-weight:bold;
+            }
+            QPushButton:hover { background-color:#1E40AF; }
+        """)
+        self.btn_setting.clicked.connect(self.open_threshold_dialog)
+        layout.addWidget(self.btn_setting)
+
+        # --------------------- 클릭 이벤트 연결 ---------------------
+        self.card_upper.card_red.mousePressEvent = lambda e: self.show_list("상한 경고", self.upper_errors)
+        self.card_upper.card_yellow.mousePressEvent = lambda e: self.show_list("상한 주의", self.upper_warnings)
+        self.card_lower.card_red.mousePressEvent = lambda e: self.show_list("하한 경고", self.lower_errors)
+        self.card_lower.card_yellow.mousePressEvent = lambda e: self.show_list("하한 주의", self.lower_warnings)
+
+    # --------------------------------------------------
+    def show_list(self, title: str, dataset: list):
+        dlg = QDialog(self)
+        dlg.setWindowTitle(title)
+        dlg.resize(400, 500)
+
+        lst = QListWidget()
+        for x in dataset:
+            lst.addItem(x)
+
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(lst)
+        dlg.exec()
+
+    # --------------------------------------------------
+    def update_alerts(self,
+                      upper_warnings: list, upper_errors: list,
+                      lower_warnings: list, lower_errors: list):
+
+        self.upper_warnings = upper_warnings
+        self.upper_errors = upper_errors
+        self.lower_warnings = lower_warnings
+        self.lower_errors = lower_errors
+
+        self.card_upper.update(len(upper_errors), len(upper_warnings))
+        self.card_lower.update(len(lower_errors), len(lower_warnings))
+
+    # --------------------------------------------------
+    def toggle_mute(self):
+        win: "MonitoringWindow" = self.window()
+
+        if not hasattr(win, "frame_left"):
+            return
+
+        fl = win.frame_left
+        fl.sound_enabled = not fl.sound_enabled
+
+        if fl.sound_enabled:
+            self.btn_mute.setText("🔊")
+            fl.last_alarm = 0
+            fl.update_all_thresholds()
+
+            # Summary UI도 새로 반영
+            self.update_alerts(
+                self.upper_warnings, self.upper_errors,
+                self.lower_warnings, self.lower_errors
+            )
+        else:
+            self.btn_mute.setText("🔇")
+            fl.alarm.stop()
+
+    # --------------------------------------------------
+    def open_threshold_dialog(self):
+        dlg = ThresholdDialog(parent=self.window())
+        dlg.exec()
+
+        win: "MonitoringWindow" = self.window()
+
+        if hasattr(win, "frame_left"):
+            win.frame_left.thresholds.load()
+            win.frame_left.refresh_expanded()
