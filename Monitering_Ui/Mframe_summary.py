@@ -31,7 +31,7 @@ class MiniCard(QFrame):
                 color:white;
                 font-size:16pt;
                 font-weight:bold;
-                border: none;   /* ★ 개별 라벨 외곽선 제거 */
+                border: none;
             }}
         """)
 
@@ -40,7 +40,7 @@ class MiniCard(QFrame):
         layout.setSpacing(10)
 
         self.label_name = QLabel(name)
-        self.label_value = QLabel("0건")
+        self.label_value = QLabel("0")
 
         layout.addWidget(self.label_name)
         layout.addWidget(self.label_value)
@@ -59,7 +59,7 @@ class MiniCard(QFrame):
         self.anim.setLoopCount(-1)
 
     def set_count(self, c):
-        self.label_value.setText(f"{c}건")
+        self.label_value.setText(f"{c}")
 
         if c >= 1:
             self.anim.start()
@@ -98,8 +98,8 @@ class GroupCard(QFrame):
         layout.addWidget(self.title_label)
 
         # 경고/주의 카드
-        self.card_red = MiniCard("경고", "#f87171")
-        self.card_yellow = MiniCard("주의", "#facc15")
+        self.card_red = MiniCard("Critical", "#f87171")
+        self.card_yellow = MiniCard("Warning", "#facc15")
 
         layout.addWidget(self.card_red)
         layout.addWidget(self.card_yellow)
@@ -131,8 +131,8 @@ class FrameSummary(QFrame):
         layout.setSpacing(25)
 
         # --------------------- 상한/하한 박스 ---------------------
-        self.card_upper = GroupCard("임계값 상한 (UPPER)", self)
-        self.card_lower = GroupCard("임계값 하한 (LOWER)", self)
+        self.card_upper = GroupCard("Threshold Upper", self)
+        self.card_lower = GroupCard("Threshold Lower", self)
 
         layout.addWidget(self.card_upper)
         layout.addWidget(self.card_lower)
@@ -152,7 +152,7 @@ class FrameSummary(QFrame):
         layout.addWidget(self.btn_mute)
 
         # --------------------- 임계값 설정 버튼 ---------------------
-        self.btn_setting = QPushButton("임계값 설정")
+        self.btn_setting = QPushButton("Threshold Setting")
         self.btn_setting.setStyleSheet("""
             QPushButton {
                 background-color:#2563EB;
@@ -177,15 +177,84 @@ class FrameSummary(QFrame):
     def show_list(self, title: str, dataset: list):
         dlg = QDialog(self)
         dlg.setWindowTitle(title)
-        dlg.resize(400, 500)
+        dlg.resize(450, 550)
 
         lst = QListWidget()
+
+        # ★ 선택 색 제거 (클릭해도 색 변화 없음)
+        lst.setStyleSheet("""
+            QListWidget {
+                background-color: #0F172A;
+                color: white;
+                font-size: 13pt;
+                padding: 10px;
+            }
+            QListWidget::item {
+                padding: 12px 8px;
+            }
+            QListWidget::item:selected {
+                background-color: transparent;
+                color: white;
+                border: none;
+            }
+        """)
+
         for x in dataset:
             lst.addItem(x)
 
-        lay = QVBoxLayout(dlg)
-        lay.addWidget(lst)
+        lst.itemClicked.connect(lambda item: self.jump_to_device(item.text()))
+
+        layout = QVBoxLayout(dlg)
+        layout.addWidget(lst)
+
         dlg.exec()
+
+    def jump_to_device(self, text: str):
+        """
+        예: '22GHz Receiver - RF_LO: -97.0'
+        → 장비명 = '22GHz Receiver'
+        """
+
+        # -----------------------
+        # 1. 텍스트 파싱
+        # -----------------------
+        try:
+            device_name = text.split(" - ")[0].strip()
+        except:
+            return
+
+        # -----------------------
+        # 2. Left 패널 객체 가져오기
+        # -----------------------
+        win: "MonitoringWindow" = self.window()
+        if not hasattr(win, "frame_left"):
+            return
+
+        fl = win.frame_left
+
+        # -----------------------
+        # 3. 해당 장비 패널 펼치기
+        # -----------------------
+        if device_name in fl.device_widgets:
+            info = fl.device_widgets[device_name]
+            btn = info["button"]
+            panel = info["panel"]
+
+            # 패널이 닫혀 있다면 열기
+            if not panel.isVisible():
+                btn.setChecked(True)
+                fl._reload_panel(device_name)
+                panel.setVisible(True)
+
+            # -----------------------
+            # 4. 자동 스크롤
+            # -----------------------
+            fl.ensureWidgetVisible(panel)
+
+        # -----------------------
+        # 팝업 닫기
+        # -----------------------
+        # (필요하면 close() 추가)
 
     # --------------------------------------------------
     def update_alerts(self,

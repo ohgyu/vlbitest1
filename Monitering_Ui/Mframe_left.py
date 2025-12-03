@@ -16,13 +16,13 @@ class MFrameLeft(QScrollArea):
     device_selected = pyqtSignal(str)
 
     DEVICE_TABLE_MAP = {
-        "2GHz 수신기": "frontend_2ghz",
-        "8GHz 수신기": "frontend_8ghz",
-        "22GHz 수신기": "frontend_22ghz",
-        "43GHz 수신기": "frontend_43ghz",
-        "S/X 다운컨버터": "SXDownConverter",
-        "K 다운컨버터": "KDownConverter",
-        "Q 다운컨버터": "QDownConverter",
+        "2GHz Receiver": "frontend_2ghz",
+        "8GHz Receiver": "frontend_8ghz",
+        "22GHz Receiver": "frontend_22ghz",
+        "43GHz Receiver": "frontend_43ghz",
+        "S/X Down Converter": "SXDownConverter",
+        "K Down Converter": "KDownConverter",
+        "Q Down Converter": "QDownConverter",
         "Video Converter 1": None,
         "Video Converter 2": "VideoConverter2",
         "IF Selector": "IFselector",

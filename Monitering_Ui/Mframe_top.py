@@ -1,4 +1,3 @@
-# Monitering_Ui/frame_top.py
 import os
 from PyQt6.QtWidgets import QLabel, QFrame, QHBoxLayout, QVBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QDateTime
@@ -14,7 +13,9 @@ class FrameTop(QFrame):
         top_layout.setContentsMargins(10, 5, 10, 5)
         top_layout.setSpacing(10)
 
-        # 안테나 이미지
+        # ------------------------------------
+        # Left Image (VLBI antenna logo etc)
+        # ------------------------------------
         pixmap = QPixmap(r"C:\Work\VLBI\VLBIGUI\image\antenna.png")
         if not pixmap.isNull():
             pixmap = pixmap.scaled(
@@ -22,57 +23,106 @@ class FrameTop(QFrame):
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
+
         label_image = QLabel()
         label_image.setPixmap(pixmap)
         label_image.setFixedSize(120, 120)
-        top_layout.addWidget(label_image, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
-        # 제목 영역 (C 옵션: 한글 + 영어 둘 다, 실시간 모니터링 버전)
+        top_layout.addWidget(
+            label_image,
+            alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+
+        # ------------------------------------
+        # Titles
+        # ------------------------------------
         title_layout = QVBoxLayout()
-        title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(2)
 
-        label_title = QLabel("우주측지 관측센터 VLBI 실시간 모니터링 시스템")
+        label_title = QLabel("측지 VLBI 시스템 모니터링")
         label_title.setStyleSheet("color:#38bdf8; font-weight:bold; font-size:23pt;")
 
-        label_subtitle = QLabel("SPACE GEODETIC OBSERVATION CENTER VLBI REAL-TIME MONITORING SYSTEM")
+        label_subtitle = QLabel("Geodetic VLBI System Monitoring")
         label_subtitle.setStyleSheet("color:#94a3b8; font-size:16pt;")
 
         title_layout.addWidget(label_title)
         title_layout.addWidget(label_subtitle)
-        title_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         top_layout.addLayout(title_layout, stretch=1)
 
-        # 시간 레이블 (KST / UTC)
+        # ------------------------------------
+        # TIME LABEL (KST / UTC)
+        # ------------------------------------
         self.time_label = QLabel()
-        self.time_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.time_label.setStyleSheet("color:white; font-size:12pt; font-weight:bold;")
+        self.time_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.time_label.setStyleSheet(
+            "color:white; font-size:12pt; font-weight:bold;"
+        )
 
         time_layout = QVBoxLayout()
-        time_layout.setContentsMargins(0, 0, 0, 0)
-        time_layout.addWidget(self.time_label, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        time_layout.addWidget(
+            self.time_label,
+            alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
 
         top_layout.addLayout(time_layout)
 
-        # 타이머
+        # ------------------------------------
+        # COMMUNICATION STATUS ICON (On/Off)
+        # ------------------------------------
+        self.icon_comm = QLabel()
+        self.icon_comm.setFixedSize(36, 36)
+
+        pix = QPixmap("image/antenna_on.png").scaled(
+            36, 36, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+        )
+        self.icon_comm.setPixmap(pix)
+
+        top_layout.addWidget(
+            self.icon_comm,
+            alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+
+        # Timer for clock tick
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_time)
         self.timer.start(1000)
         self.update_time()
 
+    # ==================================================================
+    # TIME UPDATE
+    # ==================================================================
     def update_time(self):
         now_utc = QDateTime.currentDateTimeUtc()
         now_kst = now_utc.addSecs(9 * 3600)
 
-        kst_date = now_kst.toString("yyyy-MM-dd")
-        kst_time = now_kst.toString("hh:mm:ss")
-        utc_date = now_utc.toString("yyyy-MM-dd")
-        utc_time = now_utc.toString("hh:mm:ss")
+        kst_str = now_kst.toString("yyyy-MM-dd hh:mm:ss")
+        utc_str = now_utc.toString("yyyy-MM-dd hh:mm:ss")
 
+        # 글자 크기 16pt, 줄 간격 추가(line-height)
+        self.time_label.setStyleSheet("""
+            color: white;
+            font-size: 16pt;
+            font-weight: bold;
+            line-height: 140%;
+        """)
+
+        # KST / UTC 사이 한 줄 간격 추가
         self.time_label.setText(
-            f"{kst_date} (KST)\n"
-            f"{kst_time}\n"
-            f"{utc_date} (UTC)\n"
-            f"{utc_time}"
+            f"(KST) {kst_str}\n\n"
+            f"(UTC) {utc_str}"
         )
+    # ==================================================================
+    # COMMUNICATION ICON CHANGE
+    # ==================================================================
+    def set_comm_status(self, ok: bool):
+        img = "image/antenna_on.png" if ok else "image/antenna_off.png"
+
+        pix = QPixmap(img).scaled(
+            36, 36,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self.icon_comm.setPixmap(pix)

@@ -66,14 +66,19 @@ class FrameTop(QFrame):
         now_utc = QDateTime.currentDateTimeUtc()
         now_kst = now_utc.addSecs(9 * 3600)
 
-        kst_date = now_kst.toString("yyyy-MM-dd")
-        kst_time = now_kst.toString("hh:mm:ss")
-        utc_date = now_utc.toString("yyyy-MM-dd")
-        utc_time = now_utc.toString("hh:mm:ss")
+        kst_str = now_kst.toString("yyyy-MM-dd hh:mm:ss")
+        utc_str = now_utc.toString("yyyy-MM-dd hh:mm:ss")
 
+        # 글자 크기 16pt, 줄 간격 추가(line-height)
+        self.time_label.setStyleSheet("""
+            color: white;
+            font-size: 16pt;
+            font-weight: bold;
+            line-height: 140%;
+        """)
+
+        # KST / UTC 사이 한 줄 간격 추가
         self.time_label.setText(
-            f"{kst_date} (KST)\n"
-            f"{kst_time}\n"
-            f"{utc_date} (UTC)\n"
-            f"{utc_time}"
+            f"(KST) {kst_str}\n\n"
+            f"(UTC) {utc_str}"
         )
