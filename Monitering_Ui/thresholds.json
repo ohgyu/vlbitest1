@@ -7,22 +7,30 @@
             "upper_red": 24.0
         },
         "NormalTemp_Load": {
-            "yellow": 300.0,
-            "red": 350.0
+            "lower_yellow": null,
+            "lower_red": null,
+            "upper_yellow": 300.0,
+            "upper_red": 350.0
         },
         "Cryo_ColdPlate": {
-            "yellow": 100.0,
-            "red": 100.0
+            "lower_yellow": null,
+            "lower_red": null,
+            "upper_yellow": 100.0,
+            "upper_red": 100.0
         },
         "NormalTemp_Noise": {
-            "yellow": 22.0,
-            "red": 23.0
+            "lower_yellow": null,
+            "lower_red": null,
+            "upper_yellow": 22.0,
+            "upper_red": 23.0
         }
     },
     "frontend_8ghz": {
         "NormalTemp_RF": {
-            "yellow": 21.0,
-            "red": 26.0
+            "lower_yellow": 20.0,
+            "lower_red": 18.0,
+            "upper_yellow": 21.0,
+            "upper_red": 25.0
         }
     },
     "frontend_22ghz": {

@@ -25,7 +25,6 @@ class ThresholdManager:
         if not th:
             return None
 
-        # Backward compatibility
         return {
             "lower_yellow": th.get("lower_yellow"),
             "lower_red": th.get("lower_red"),

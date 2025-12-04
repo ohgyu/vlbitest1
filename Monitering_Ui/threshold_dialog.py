@@ -1,9 +1,10 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton,
-    QComboBox, QLineEdit, QMessageBox
+    QComboBox, QLineEdit, QMessageBox, QFileDialog
 )
 from PyQt6.QtCore import Qt, QTimer
 from Monitering_Ui.threshold_manager import ThresholdManager
+import csv
 
 
 class ThresholdDialog(QDialog):
@@ -42,6 +43,7 @@ class ThresholdDialog(QDialog):
         "LOCK_ch5", "LOCK_ch6", "LOCK_ch7", "LOCK_ch8",
         "ATT_ch1", "ATT_ch2", "ATT_ch3", "ATT_ch4",
         "ATT_ch5", "ATT_ch6", "ATT_ch7", "ATT_ch8",
+        "ATT_ch5", "ATT_ch6", "ATT_ch7", "ATT_ch8",
         "FRQALL_ch1", "FRQALL_ch2", "FRQALL_ch3", "FRQALL_ch4",
         "FRQALL_ch5", "FRQALL_ch6", "FRQALL_ch7", "FRQALL_ch8",
     ]
@@ -78,7 +80,7 @@ class ThresholdDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("임계값 설정")
-        self.resize(500, 480)
+        self.resize(500, 520)
 
         self.tm = ThresholdManager()
 
@@ -116,7 +118,6 @@ class ThresholdDialog(QDialog):
         self.combo_column = QComboBox()
         layout.addWidget(self.combo_column)
 
-        # -------------------- 새로 추가된 4개 임계값 필드 --------------------
         layout.addWidget(QLabel("하한 주의 (LOW YELLOW)"))
         self.input_ly = QLineEdit()
         layout.addWidget(self.input_ly)
@@ -137,8 +138,22 @@ class ThresholdDialog(QDialog):
         btn_save.clicked.connect(self.save_threshold)
         layout.addWidget(btn_save)
 
+        # -------------------------------
+        # CSV 내보내기 / 불러오기 버튼
+        # -------------------------------
+        btn_export = QPushButton("CSV 내보내기")
+        btn_export.clicked.connect(self.export_csv)
+        layout.addWidget(btn_export)
+
+        btn_import = QPushButton("CSV 불러오기")
+        btn_import.clicked.connect(self.import_csv)
+        layout.addWidget(btn_import)
+
         QTimer.singleShot(0, self._late_init)
 
+    # ----------------------------------------------------------
+    # 초기 UI 로드
+    # ----------------------------------------------------------
     def _late_init(self):
         self.combo_device.currentIndexChanged.connect(self._reload_columns)
         self.combo_column.currentIndexChanged.connect(self._load_existing_threshold)
@@ -175,6 +190,9 @@ class ThresholdDialog(QDialog):
         if th.get("upper_red") is not None:
             self.input_ur.setText(str(th["upper_red"]))
 
+    # ----------------------------------------------------------
+    # 저장 버튼
+    # ----------------------------------------------------------
     def save_threshold(self):
         table = self.combo_device.currentData()
         col = self.combo_column.currentText()
@@ -191,3 +209,79 @@ class ThresholdDialog(QDialog):
         self.tm.set_threshold(table, col, ly, lr, uy, ur)
         QMessageBox.information(self, "저장 완료", "임계값이 저장되었습니다.")
         self.close()
+
+    # ----------------------------------------------------------
+    # CSV 내보내기
+    # ----------------------------------------------------------
+    def export_csv(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "임계값 CSV 내보내기", "thresholds.csv", "CSV Files (*.csv)"
+        )
+        if not path:
+            return
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["table", "column",
+                             "lower_yellow", "lower_red",
+                             "upper_yellow", "upper_red"])
+
+            for table, cols in self.tm.thresholds.items():
+                for col, th in cols.items():
+                    writer.writerow([
+                        table,
+                        col,
+                        th.get("lower_yellow", ""),
+                        th.get("lower_red", ""),
+                        th.get("upper_yellow", th.get("yellow", "")),
+                        th.get("upper_red", th.get("red", "")),
+                    ])
+
+        QMessageBox.information(self, "완료", "CSV로 내보내기 완료되었습니다.")
+
+    # ----------------------------------------------------------
+    # CSV 불러오기
+    # ----------------------------------------------------------
+    def import_csv(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "CSV 선택", "", "CSV Files (*.csv)"
+        )
+        if not path:
+            return
+
+        new_data = {}
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+
+                for row in reader:
+                    table = row["table"]
+                    col = row["column"]
+
+                    if table not in new_data:
+                        new_data[table] = {}
+
+                    def to_float(x):
+                        try:
+                            return float(x)
+                        except:
+                            return None
+
+                    new_data[table][col] = {
+                        "lower_yellow": to_float(row["lower_yellow"]),
+                        "lower_red": to_float(row["lower_red"]),
+                        "upper_yellow": to_float(row["upper_yellow"]),
+                        "upper_red": to_float(row["upper_red"]),
+                    }
+
+            self.tm.thresholds = new_data
+            self.tm.save()
+
+            QMessageBox.information(self, "완료", "CSV에서 임계값이 불러와졌습니다.")
+
+            self._reload_columns()
+
+        except Exception as e:
+            QMessageBox.warning(self, "오류", f"CSV 불러오기 실패: {e}")
+
