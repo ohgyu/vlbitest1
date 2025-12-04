@@ -281,6 +281,10 @@ class FrameSummary(QFrame):
 
         if fl.sound_enabled:
             self.btn_mute.setText("🔊")
+
+            # ★ 음소거 해제 시 알람 상태 초기화 (중요) ★
+            fl.alarm_is_active = False
+
             fl.last_alarm = 0
             fl.update_all_thresholds()
 
@@ -292,6 +296,9 @@ class FrameSummary(QFrame):
         else:
             self.btn_mute.setText("🔇")
             fl.alarm.stop()
+
+            # ★ 음소거 ON일 때도 상태 통일해서 끔 ★
+            fl.alarm_is_active = False
 
     # --------------------------------------------------
     def open_threshold_dialog(self):

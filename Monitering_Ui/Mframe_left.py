@@ -84,6 +84,8 @@ class MFrameLeft(QScrollArea):
         self.alarm.setVolume(0.9)
         self.last_alarm = 0
 
+        self.alarm_is_active = False
+
     # ---------------------------------------------------------
     def _create_device_row(self, device_name: str):
         btn = QPushButton(device_name)
@@ -427,8 +429,15 @@ class MFrameLeft(QScrollArea):
 
         # 경고음 (상/하한 합산)
         all_errors = upper_errors + lower_errors
+
+        # -----------------------------
+        # 통합 알람 제어 (중복 방지)
+        # -----------------------------
         if all_errors and self.sound_enabled:
-            now = time.time()
-            if now - self.last_alarm > 5:
+            if not self.alarm_is_active:
                 self.alarm.play()
-                self.last_alarm = now
+                self.alarm_is_active = True
+        else:
+            if self.alarm_is_active:
+                self.alarm.stop()
+            self.alarm_is_active = False
