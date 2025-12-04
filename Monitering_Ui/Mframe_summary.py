@@ -168,10 +168,10 @@ class FrameSummary(QFrame):
         layout.addWidget(self.btn_setting)
 
         # --------------------- 클릭 이벤트 연결 ---------------------
-        self.card_upper.card_red.mousePressEvent = lambda e: self.show_list("상한 경고", self.upper_errors)
-        self.card_upper.card_yellow.mousePressEvent = lambda e: self.show_list("상한 주의", self.upper_warnings)
-        self.card_lower.card_red.mousePressEvent = lambda e: self.show_list("하한 경고", self.lower_errors)
-        self.card_lower.card_yellow.mousePressEvent = lambda e: self.show_list("하한 주의", self.lower_warnings)
+        self.card_upper.card_red.mousePressEvent = lambda e: self.show_list("Upper Critical", self.upper_errors)
+        self.card_upper.card_yellow.mousePressEvent = lambda e: self.show_list("Upper Warning", self.upper_warnings)
+        self.card_lower.card_red.mousePressEvent = lambda e: self.show_list("Lower Critical", self.lower_errors)
+        self.card_lower.card_yellow.mousePressEvent = lambda e: self.show_list("Lower Warning", self.lower_warnings)
 
     # --------------------------------------------------
     def show_list(self, title: str, dataset: list):
