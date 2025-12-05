@@ -18,7 +18,7 @@ class FrameTop(QFrame):
         top_layout.setSpacing(10)
 
         # 안테나 사진
-        pixmap = QPixmap(r"C:\Work\VLBI\VLBIGUI\image\antenna.png")
+        pixmap = QPixmap(r"C:\Work\VLBI\VLBIGUI\image\logo.png")
         if not pixmap.isNull():
             pixmap = pixmap.scaled(
                 120, 120,
@@ -35,9 +35,9 @@ class FrameTop(QFrame):
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(2)
 
-        label_title = QLabel("우주측지 관측센터 VLBI 통계 대시보드")
+        label_title = QLabel("측지 VLBI 통계 대시보드")
         label_title.setStyleSheet("color:#38bdf8; font-weight:bold; font-size:23pt;")
-        label_subtitle = QLabel("SPACE GEODETIC OBSERVATION CENTER VLBI STATISTICS DASHBOARD")
+        label_subtitle = QLabel("Geodesic VLBI Statistics Dashboard")
         label_subtitle.setStyleSheet("color:#94a3b8; font-size:16pt;")
         title_layout.addWidget(label_title)
         title_layout.addWidget(label_subtitle)

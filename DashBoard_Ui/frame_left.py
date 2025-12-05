@@ -106,6 +106,7 @@ class FrameLeft(QScrollArea):
             lst.addItems(items)
             lst.setVisible(False)
             lst.setStyleSheet(self.list_style())
+            lst.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
             layout.addWidget(lst)
             self.lists[title] = lst
 
@@ -179,13 +180,44 @@ class FrameLeft(QScrollArea):
         self.active_child = item
         self.item_selected.emit(group_name, item.text(), False)
 
-    def refresh_child_selection(self, parent_name=None):
-        if not hasattr(self, "frame_center") or self.frame_center is None:
+    def refresh_child_selection(self):
+        """오른쪽 그래프에 실제 표시중인 (parent, child) 를 기준으로 왼쪽 선택 표시 갱신"""
+
+        if not hasattr(self, "frame_center"):
             return
-        for parent, widget in self.lists.items():
-            selected_list = self.frame_center.selected_children.get(parent, [])
-            for i in range(widget.count()):
-                widget.item(i).setSelected(widget.item(i).text() in selected_list)
+
+        # 현재 실제 표시중인 그래프 항목들
+        # [(parent, child), ...]
+        active_items = set(self.frame_center.get_current_selected_items())
+
+        # parent 기준으로 정리
+        active_by_parent = {}
+        for parent, child in active_items:
+            active_by_parent.setdefault(parent, set()).add(child)
+
+        # 왼쪽 메뉴 전체 순회
+        for parent, lst in self.lists.items():  # parent = "2GHz 수신기 상태 모니터" ...
+            # 리스트 비어 있을 시 패스
+            if lst.count() == 0:
+                continue
+
+            for i in range(lst.count()):
+                item = lst.item(i)
+                child_name = item.text()
+
+                if parent in active_by_parent and child_name in active_by_parent[parent]:
+                    # 표시되는 그래프에 포함 → 선택된 상태로
+                    item.setSelected(True)
+                else:
+                    item.setSelected(False)
+
+    def clear_all_selection(self):
+        """왼쪽 모든 리스트/버튼 선택 해제 + 리스트 접기"""
+        for parent, lst in self.lists.items():
+            lst.clearSelection()
+            lst.setVisible(False)
+        # 버튼 스타일도 전부 기본으로
+        self.update_button_highlight([])
 
     def set_frame_center(self, frame_center):
         self.frame_center = frame_center
